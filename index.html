@@ -3833,9 +3833,16 @@ window.LULU_ASSETS = {"cat-food":"data:image/webp;base64,UklGRn4NAABXRUJQVlA4IHI
     const v = Number(n) || 0;
     return (v < 0 ? '-' : '') + '¥' + nf.format(Math.abs(v));
   };
-  const money0 = (n) => {
+  // 有小数就显示到分，整数不强行补 .00，避免把 4.5 四舍五入成 5
+  const amountSmart = (n) => {
     const v = Number(n) || 0;
-    return (v < 0 ? '-' : '') + '¥' + nf0.format(Math.abs(v));
+    const abs = Math.abs(v);
+    const hasCents = Math.round(abs * 100) % 100 !== 0;
+    return (v < 0 ? '-' : '') + (hasCents ? nf.format(abs) : nf0.format(abs));
+  };
+  const moneySmart = (n) => {
+    const text = amountSmart(n);
+    return text.charAt(0) === '-' ? '-¥' + text.slice(1) : '¥' + text;
   };
   const amountText = (n) => nf.format(Number(n) || 0);
   const plainAmount = (n) => String(Math.round((Number(n) || 0) * 100) / 100);
@@ -4125,7 +4132,7 @@ window.LULU_ASSETS = {"cat-food":"data:image/webp;base64,UklGRn4NAABXRUJQVlA4IHI
     const left = budget - t.expense;
     const hasBudget = budget > 0;
     const usedPct = hasBudget ? Math.round(used * 100) : 0;
-    const budgetRight = hasBudget ? (left >= 0 ? '还剩 ' + money0(left) : '超支 ' + money0(-left)) : '去「我的」设置';
+    const budgetRight = hasBudget ? (left >= 0 ? '还剩 ' + moneySmart(left) : '超支 ' + moneySmart(-left)) : '去「我的」设置';
     const recent = list.slice(0, 3);
     const quick = ['food', 'transport', 'shopping', 'fun', 'home', 'health'];
     const quickCats = quick.map((id) => catById(id));
@@ -4148,11 +4155,11 @@ window.LULU_ASSETS = {"cat-food":"data:image/webp;base64,UklGRn4NAABXRUJQVlA4IHI
           '</div>' +
           '<p class="hero-amount"><span>¥</span>' + amountText(t.expense) + '</p>' +
           '<div class="hero-split">' +
-            '<span>收入 <b>' + money0(t.income) + '</b></span><i></i>' +
-            '<span>结余 <b>' + money0(t.balance) + '</b></span>' +
+            '<span>收入 <b>' + moneySmart(t.income) + '</b></span><i></i>' +
+            '<span>结余 <b>' + moneySmart(t.balance) + '</b></span>' +
           '</div>' +
           '<div class="budget">' +
-            '<div class="budget-head"><span>' + (hasBudget ? '月预算 ' + money0(budget) : '还没有设置月预算') + '</span><span>' + budgetRight + '</span></div>' +
+            '<div class="budget-head"><span>' + (hasBudget ? '月预算 ' + moneySmart(budget) : '还没有设置月预算') + '</span><span>' + budgetRight + '</span></div>' +
             '<div class="budget-track"><i style="width:' + Math.min(Math.max(usedPct, 0), 100) + '%"></i></div>' +
             '<p class="budget-note">' + (hasBudget ? '已用 ' + usedPct + '%' : '设置预算后这里会显示进度') + '</p>' +
           '</div>' +
@@ -4218,9 +4225,9 @@ window.LULU_ASSETS = {"cat-food":"data:image/webp;base64,UklGRn4NAABXRUJQVlA4IHI
       '</header>' +
       monthSwitcher(key) +
       '<section class="bills-summary reveal" style="--d:2">' +
-        '<div><span>支出</span><b>' + money0(t.expense) + '</b></div>' +
-        '<div><span>收入</span><b class="income">' + money0(t.income) + '</b></div>' +
-        '<div><span>结余</span><b>' + money0(t.balance) + '</b></div>' +
+        '<div><span>支出</span><b>' + moneySmart(t.expense) + '</b></div>' +
+        '<div><span>收入</span><b class="income">' + moneySmart(t.income) + '</b></div>' +
+        '<div><span>结余</span><b>' + moneySmart(t.balance) + '</b></div>' +
       '</section>' +
       '<div class="filter-row reveal" style="--d:3">' +
         '<button class="chip ' + (state.filter === 'all' ? 'active' : '') + '" type="button" data-action="filter-type" data-type="all">全部</button>' +
@@ -4250,7 +4257,7 @@ window.LULU_ASSETS = {"cat-food":"data:image/webp;base64,UklGRn4NAABXRUJQVlA4IHI
     }).join('');
     return '<svg class="donut" viewBox="0 0 160 160" role="img" aria-label="支出构成环形图">' + arcs +
       '<text x="80" y="72" text-anchor="middle" class="donut-label">本月支出</text>' +
-      '<text x="80" y="96" text-anchor="middle" class="donut-total">' + money0(total) + '</text>' +
+      '<text x="80" y="96" text-anchor="middle" class="donut-total">' + moneySmart(total) + '</text>' +
     '</svg>';
   }
 
@@ -4277,10 +4284,10 @@ window.LULU_ASSETS = {"cat-food":"data:image/webp;base64,UklGRn4NAABXRUJQVlA4IHI
   function statsNote(cats, expense, budget, key) {
     const label = monthLabel(key);
     if (!cats.length) return label + '还没有支出记录。等第一笔记下来，噜噜就帮你看看钱都去哪儿了。';
-    if (!budget) return label + '花了 ' + money0(expense) + '，最大的一头是' + cats[0].name + '（' + money0(cats[0].value) + '，占 ' + Math.round(cats[0].pct * 100) + '%）。去「我的」设一个月预算，我就能帮你盯紧一点。';
-    if (expense > budget) return '预算超了 ' + money0(expense - budget) + '，最大的一头是' + cats[0].name + '。先把这一项的非必要消费停一周试试。';
-    if (expense / budget > 0.8) return '预算用了 ' + Math.round((expense / budget) * 100) + '%，最大的一头是' + cats[0].name + '（' + money0(cats[0].value) + '）。剩下几天可以把' + cats[0].name + '的单笔上限压低一点。';
-    return label + '预算还剩 ' + money0(budget - expense) + '，花得最多的是' + cats[0].name + '（' + money0(cats[0].value) + '，占 ' + Math.round(cats[0].pct * 100) + '%）。目前节奏很稳，继续保持。';
+    if (!budget) return label + '花了 ' + moneySmart(expense) + '，最大的一头是' + cats[0].name + '（' + moneySmart(cats[0].value) + '，占 ' + Math.round(cats[0].pct * 100) + '%）。去「我的」设一个月预算，我就能帮你盯紧一点。';
+    if (expense > budget) return '预算超了 ' + moneySmart(expense - budget) + '，最大的一头是' + cats[0].name + '。先把这一项的非必要消费停一周试试。';
+    if (expense / budget > 0.8) return '预算用了 ' + Math.round((expense / budget) * 100) + '%，最大的一头是' + cats[0].name + '（' + moneySmart(cats[0].value) + '）。剩下几天可以把' + cats[0].name + '的单笔上限压低一点。';
+    return label + '预算还剩 ' + moneySmart(budget - expense) + '，花得最多的是' + cats[0].name + '（' + moneySmart(cats[0].value) + '，占 ' + Math.round(cats[0].pct * 100) + '%）。目前节奏很稳，继续保持。';
   }
 
   function renderStats() {
@@ -4305,14 +4312,14 @@ window.LULU_ASSETS = {"cat-food":"data:image/webp;base64,UklGRn4NAABXRUJQVlA4IHI
       monthSwitcher(key) +
       '<section class="stat-summary reveal" style="--d:2">' +
         '<div class="stat-main"><span>本月支出</span><b>' + money(t.expense) + '</b></div>' +
-        '<div class="stat-sub"><span>收入 <b>' + money0(t.income) + '</b></span><span>结余 <b>' + money0(t.balance) + '</b></span></div>' +
+        '<div class="stat-sub"><span>收入 <b>' + moneySmart(t.income) + '</b></span><span>结余 <b>' + moneySmart(t.balance) + '</b></span></div>' +
       '</section>' +
 
       '<section class="card chart-card reveal" style="--d:3">' +
         '<div class="section-head"><h2>支出构成</h2><span>' + (allCats.length ? allCats.length + ' 类' : '暂无') + '</span></div>' +
         (allCats.length ? '<div class="donut-wrap">' + donutSVG(cats, t.expense) +
           '<div class="legend">' + cats.map((c) => {
-            return '<div class="legend-row"><i style="background:' + c.color + '"></i><span>' + c.name + '</span><b>' + money0(c.value) + '</b><em>' + Math.round(c.pct * 100) + '%</em></div>';
+            return '<div class="legend-row"><i style="background:' + c.color + '"></i><span>' + c.name + '</span><b>' + moneySmart(c.value) + '</b><em>' + Math.round(c.pct * 100) + '%</em></div>';
           }).join('') + '</div></div>' : emptyState('还没有支出可以分析', '记几笔之后，这里会长出图表', 'mascot-sleep', 'empty-sleep')) +
       '</section>' +
 
@@ -4320,8 +4327,8 @@ window.LULU_ASSETS = {"cat-food":"data:image/webp;base64,UklGRn4NAABXRUJQVlA4IHI
         '<div class="section-head"><h2>近 7 天</h2><span>每天花了多少</span></div>' +
         '<div class="bars">' + days.map((d) => {
           const h = Math.round((d.value / maxDay) * 100);
-          return '<div class="bar-col" title="' + d.label + ' 支出 ' + money0(d.value) + '">' +
-            '<span class="bar-value">' + (d.value ? nf0.format(d.value) : '') + '</span>' +
+          return '<div class="bar-col" title="' + d.label + ' 支出 ' + moneySmart(d.value) + '">' +
+            '<span class="bar-value">' + (d.value ? amountSmart(d.value) : '') + '</span>' +
             '<span class="bar-track"><i style="height:' + (d.value ? Math.max(h, 6) : 2) + '%"></i></span>' +
             '<span class="bar-label">' + d.label + '</span></div>';
         }).join('') + '</div>' +
@@ -4334,7 +4341,7 @@ window.LULU_ASSETS = {"cat-food":"data:image/webp;base64,UklGRn4NAABXRUJQVlA4IHI
           return '<div class="rank-row"><span class="rank-index">' + pad2(i + 1) + '</span>' +
             '<span class="rank-name">' + c.name + '</span>' +
             '<span class="rank-bar"><i style="width:' + w + '%;background:' + c.color + '"></i></span>' +
-            '<b>' + money0(c.value) + '</b></div>';
+            '<b>' + moneySmart(c.value) + '</b></div>';
         }).join('') + '</div>' : '<p class="muted">暂无数据</p>') +
       '</section>' +
 
