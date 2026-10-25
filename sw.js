@@ -1,4 +1,4 @@
-const CACHE = 'lulu-ledger-pwa-v2';
+const CACHE = 'lulu-ledger-pwa-v3';
 const ASSETS = [
   './index.html',
   './manifest.webmanifest',
